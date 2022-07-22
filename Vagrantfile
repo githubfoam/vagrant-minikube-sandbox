@@ -8,8 +8,6 @@
 
 # Minikube
 KUBERNETES_VERSION = ENV['KUBERNETES_VERSION'] || "1.16.3" # OK
-# X Exiting due to GUEST_MISSING_CONNTRACK: Sorry, Kubernetes 1.24.3 requires conntrack to be installed in root's path
-# KUBERNETES_VERSION = ENV['KUBERNETES_VERSION'] || "1.24.3" # NOT OK conntrack missing
 
 $ubuntu_docker_script = <<-SCRIPT
 
@@ -256,43 +254,6 @@ kubectl get pod,svc -n kube-system
 
 SCRIPT
 
-$prometheus = <<SCRIPT
-#!/bin/bash
-
-#create seperate namespace
-kubectl apply -f monitoring-namespace.yaml
-
-# Create configMap for prometheus.
-kubectl apply -f prometheus-config.yaml
-
-# Create prometheus deployment
-kubectl apply -f prometheus-deployment.yaml
-
-# Create prometheus service.
-kubectl apply -f prometheus-service.yaml
-
-#verify
-kubectl get services --namespace=monitoring prometheus -o yaml
-
-#browser window accessing the service.
-minikube service --namespace=monitoring prometheus
-
-# Create grafana deployment
-kubectl apply -f grafana-deployment.yaml
-
-# Create grafana service.
-kubectl apply -f grafana-service.yaml
-
-# open a browser window accessing the service
-#Username\password is admin\admin
-minikube service --namespace=monitoring grafana
-
-
-#Prometheus Node Exporter Daemonset
-# run an instance of this on every node
-kubectl apply -f node-exporter-daemonset.yaml
-
-SCRIPT
 
 Vagrant.configure("2") do |config|
 
@@ -331,7 +292,6 @@ Vagrant.configure("2") do |config|
       end
       kalicluster.vm.provision "shell", inline: $installer, privileged: false
       kalicluster.vm.provision "shell", inline: $docker, privileged: false #OK
-      # kalicluster.vm.provision "shell", inline: $ubuntu_docker_script
       kalicluster.vm.provision "shell", inline: $minikubescript, privileged: false, env: {"KUBERNETES_VERSION" => KUBERNETES_VERSION}
     end 
 
@@ -360,11 +320,8 @@ Vagrant.configure("2") do |config|
           vb.cpus = 2
           vb.memory = 4096          
           vb.gui = false     
-          # vb.customize ["modifyvm", :id, "--cableconnected1", "on"]     
       end
-      # kalicluster.vm.provision "shell",    inline: "hostnamectl set-hostname vg-kali-05"
-      kalicluster.vm.provision "shell", inline: $installer, privileged: false
-      # kalicluster.vm.provision "shell", inline: $docker, privileged: false #OK
+       kalicluster.vm.provision "shell", inline: $installer, privileged: false
       kalicluster.vm.provision "shell", inline: $ubuntu_docker_script
       kalicluster.vm.provision "shell", inline: $minikubescript, privileged: false, env: {"KUBERNETES_VERSION" => KUBERNETES_VERSION}
     end
